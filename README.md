@@ -78,13 +78,16 @@ To keep the same token across restarts, set `KOBOBRIDGE_DEVICE_TOKEN` to the val
 
 ## Docker
 
+There is no published image yet. The `Dockerfile` in this repository builds one:
+
 ```
+docker build -t kobobridge .
 docker run -d --name kobobridge -p 8484:8484 \
   -e KOBOBRIDGE_ABS_URL=http://192.168.1.10:13378 \
   -e KOBOBRIDGE_ABS_TOKEN=paste-your-token-here \
   -e KOBOBRIDGE_DEVICE_TOKEN=pick-a-long-random-string \
   -v kobobridge-data:/data \
-  ghcr.io/rezarys/kobobridge:latest
+  kobobridge
 ```
 
 ## Settings
