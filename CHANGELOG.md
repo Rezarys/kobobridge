@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- The readme no longer points at a container image that is not published. Build it from the `Dockerfile` in the repository instead.
+
 ## 0.1.0
 
 First release.
