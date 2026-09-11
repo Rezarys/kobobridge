@@ -7,6 +7,7 @@ a test asserts that no other HTTP verb appears in this file.
 
 import re
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -16,6 +17,10 @@ import requests
 # Formats the eReader reads natively. Anything else in the library is skipped rather than
 # converted, because converting would mean writing somewhere.
 EBOOK_FORMATS = ("epub", "kepub")
+
+# Parallelism for the one-off size lookups. Enough to keep a first sync brief without
+# leaning on the server; every later sync reads the cache instead.
+SIZE_LOOKUP_WORKERS = 8
 
 # A fixed namespace, so a given library item always maps to the same identifier. The device
 # expects UUIDs and Audiobookshelf hands out identifiers like "li_abc123", so they are derived
@@ -127,7 +132,8 @@ class AudiobookshelfError(RuntimeError):
 class Audiobookshelf:
     """Read only access to one Audiobookshelf server."""
 
-    def __init__(self, base_url, token, timeout=30.0, session=None):
+    def __init__(self, base_url, token, timeout=30.0, session=None, sizes=None):
+        self.sizes = sizes
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.session = session or requests.Session()
@@ -183,9 +189,45 @@ class Audiobookshelf:
                 continue
             book = Book.from_item(item)
             if book.item_id:
-                found.append(book)
+                found.append((book, str(item.get("updatedAt") or "")))
+        self._resolve_sizes(found)
+        found = [book for book, _ in found]
         found.sort(key=lambda book: (book.modified, book.item_id))
         return found
+
+    def _resolve_sizes(self, pairs):
+        """Replace the listing's item size with the real ebook size, cached per revision.
+
+        One request per book is unavoidable, so results are cached against the item's
+        ``updatedAt`` and only unknown or changed books are fetched. A failed lookup leaves
+        the listing figure alone rather than reporting zero.
+        """
+        if self.sizes is None:
+            return
+        pending = []
+        for book, stamp in pairs:
+            cached = self.sizes.get(book.item_id, stamp)
+            if cached is not None:
+                book.size = cached
+            else:
+                pending.append((book, stamp))
+        if not pending:
+            return
+
+        def fetch(entry):
+            book, stamp = entry
+            try:
+                return book, stamp, self.ebook_size(book.item_id)
+            except AudiobookshelfError:
+                return book, stamp, None
+
+        workers = min(SIZE_LOOKUP_WORKERS, len(pending))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for book, stamp, size in pool.map(fetch, pending):
+                if size:
+                    book.size = size
+                    self.sizes.remember(book.item_id, stamp, size)
+        self.sizes.flush()
 
     def all_books(self, only=None):
         found = []
@@ -193,6 +235,25 @@ class Audiobookshelf:
             found.extend(self.books(library_id))
         found.sort(key=lambda book: (book.modified, book.item_id))
         return found
+
+    def ebook_size(self, item_id):
+        """The true EPUB length, via a one byte ranged read.
+
+        A library listing cannot answer this: ``media.ebookFile`` is absent from
+        ``/api/libraries/{id}/items`` whether or not ``minified`` or ``expanded`` is set, so
+        ``media.size`` -- the whole item, audio included -- is all it offers. Asking for the
+        first byte returns ``Content-Range: bytes 0-0/<total>`` and transfers one byte.
+        Still a GET, so the single outbound door holds.
+        """
+        response = self._get(
+            "/api/items/{0}/ebook".format(item_id), headers={"Range": "bytes=0-0"}
+        )
+        content_range = response.headers.get("Content-Range") or ""
+        total = content_range.rpartition("/")[2].strip()
+        if total.isdigit():
+            return int(total)
+        length = response.headers.get("Content-Length")
+        return int(length) if length and length.isdigit() else 0
 
     def ebook_stream(self, item_id):
         """The ebook file itself, streamed so a large book never lands in memory."""
