@@ -130,4 +130,4 @@ pytest
 
 ## License
 
-MIT. Younes Z.
+MIT. Younes Z., built with AI assistance, reviewed and tested by me.
