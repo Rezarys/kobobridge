@@ -7,7 +7,7 @@ import pytest
 from kobobridge import abs as abs_module
 from kobobridge.abs import Audiobookshelf, AudiobookshelfError, Book, item_uuid
 
-from conftest import item
+from conftest import FakeResponse, item
 
 
 def test_the_client_only_ever_reads():
@@ -109,3 +109,77 @@ def test_podcast_libraries_are_skipped(monkeypatch):
         ],
     )
     assert client.book_library_ids(None) == ["lib-1"]
+
+
+def test_the_real_ebook_size_replaces_the_item_size(monkeypatch, tmp_path):
+    """A listing reports the whole item; on a combined library that is the audiobook."""
+    from kobobridge.state import EbookSizeStore
+
+    sizes = EbookSizeStore(str(tmp_path / "sizes.json"))
+    client = Audiobookshelf("http://abs.local", "token", sizes=sizes)
+    payload = {"results": [item("li_one", "Combined", fmt="epub", size=419_340_239)]}
+    asked = []
+
+    def fake_get(path, **kwargs):
+        if path.endswith("/ebook"):
+            asked.append((path, kwargs.get("headers")))
+            return FakeResponse(headers={"Content-Range": "bytes 0-0/716042"})
+        return FakeResponse(payload=payload)
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    books = client.books("lib-1")
+    assert books[0].size == 716042, "the EPUB size, not the item size"
+    assert asked == [("/api/items/li_one/ebook", {"Range": "bytes=0-0"})]
+
+
+def test_a_known_size_is_not_fetched_twice(monkeypatch, tmp_path):
+    from kobobridge.state import EbookSizeStore
+
+    sizes = EbookSizeStore(str(tmp_path / "sizes.json"))
+    client = Audiobookshelf("http://abs.local", "token", sizes=sizes)
+    payload = {"results": [item("li_one", "Cached", fmt="epub", updated=1_600_000_000_000)]}
+    calls = []
+
+    def fake_get(path, **kwargs):
+        if path.endswith("/ebook"):
+            calls.append(path)
+            return FakeResponse(headers={"Content-Range": "bytes 0-0/4242"})
+        return FakeResponse(payload=payload)
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    assert client.books("lib-1")[0].size == 4242
+    assert client.books("lib-1")[0].size == 4242
+    assert len(calls) == 1, "the second sync reads the cache"
+
+    # A changed item invalidates its entry.
+    payload["results"] = [item("li_one", "Cached", fmt="epub", updated=1_700_000_000_000)]
+    client.books("lib-1")
+    assert len(calls) == 2
+
+
+def test_a_failed_size_lookup_keeps_the_listing_figure(monkeypatch, tmp_path):
+    """Better an approximate size than a zero, which the device would read as empty."""
+    from kobobridge.state import EbookSizeStore
+
+    sizes = EbookSizeStore(str(tmp_path / "sizes.json"))
+    client = Audiobookshelf("http://abs.local", "token", sizes=sizes)
+    payload = {"results": [item("li_one", "Unreachable", fmt="epub", size=555)]}
+
+    def fake_get(path, **kwargs):
+        if path.endswith("/ebook"):
+            raise AudiobookshelfError("upstream is down")
+        return FakeResponse(payload=payload)
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    assert client.books("lib-1")[0].size == 555
+
+
+def test_a_server_without_ranges_falls_back_to_content_length(monkeypatch, tmp_path):
+    from kobobridge.state import EbookSizeStore
+
+    sizes = EbookSizeStore(str(tmp_path / "sizes.json"))
+    client = Audiobookshelf("http://abs.local", "token", sizes=sizes)
+    monkeypatch.setattr(
+        client, "_get", lambda path, **kw: FakeResponse(headers={"Content-Length": "9001"})
+    )
+    assert client.ebook_size("li_one") == 9001

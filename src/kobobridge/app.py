@@ -9,7 +9,7 @@ from flask import Flask, jsonify
 from .abs import Audiobookshelf, AudiobookshelfError
 from .config import Config
 from .resources import build_resources
-from .state import ReadingStateStore
+from .state import EbookSizeStore, ReadingStateStore, size_cache_path
 from . import kobo
 
 # How long a library listing is reused before the server is asked again. A sync is a burst of
@@ -23,7 +23,10 @@ class Bridge:
     def __init__(self, config, client=None, reading_states=None, clock=time.monotonic):
         self.config = config
         self.client = client or Audiobookshelf(
-            config.abs_url, config.abs_token, timeout=config.timeout
+            config.abs_url,
+            config.abs_token,
+            timeout=config.timeout,
+            sizes=EbookSizeStore(size_cache_path()),
         )
         self.reading_states = (
             reading_states if reading_states is not None else ReadingStateStore()
