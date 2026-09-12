@@ -260,7 +260,10 @@ class Audiobookshelf:
         return self._get("/api/items/{0}/ebook".format(item_id), stream=True)
 
     def cover_stream(self, item_id, width=None, height=None):
-        params = {}
+        # The bridge serves covers on a route the device reads as image.jpg. Audiobookshelf
+        # answers webp whenever the request accepts it, and an Accept of "*/*" counts, so the
+        # format is asked for rather than left to content negotiation.
+        params = {"format": "jpeg"}
         if width:
             params["width"] = width
         if height:

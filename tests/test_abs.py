@@ -183,3 +183,17 @@ def test_a_server_without_ranges_falls_back_to_content_length(monkeypatch, tmp_p
         client, "_get", lambda path, **kw: FakeResponse(headers={"Content-Length": "9001"})
     )
     assert client.ebook_size("li_one") == 9001
+
+
+def test_a_cover_is_asked_for_as_jpeg(monkeypatch):
+    """The route the device reads is image.jpg, so webp is never negotiated by accident."""
+    client = Audiobookshelf("http://abs.local", "token")
+    seen = {}
+
+    def fake_get(path, **kwargs):
+        seen.update(kwargs.get("params") or {})
+        return FakeResponse()
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    client.cover_stream("li_one", width=300, height=400)
+    assert seen == {"format": "jpeg", "width": 300, "height": 400}

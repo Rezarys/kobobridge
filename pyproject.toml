@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kobobridge"
-version = "0.1.1"
+version = "0.1.2"
 description = "Serve an Audiobookshelf ebook library to a Kobo eReader over the native sync protocol."
 readme = "README.md"
 license = { file = "LICENSE" }

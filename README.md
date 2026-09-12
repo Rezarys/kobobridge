@@ -28,7 +28,7 @@ Your Audiobookshelf server already holds your epubs. Your eReader already knows 
 
 Worth reading before you install.
 
-- **It never writes to your library.** Every call to Audiobookshelf is a GET. Reading progress the reader pushes is kept in a small file next to the bridge, not pushed into Audiobookshelf, so progress does not yet show up in the Audiobookshelf web player. A test asserts this.
+- **It never writes to your library.** Every call to Audiobookshelf is a GET. Reading progress the reader pushes is kept in a small file next to the bridge, not pushed into Audiobookshelf, so progress does not yet show up in the Audiobookshelf web player. A test asserts this. The true size of each ebook is kept beside it, in `ebook-sizes.json`, and refreshed when the item changes in Audiobookshelf.
 - **It does not touch any account on the manufacturer's store.** No store credential, no user key, no device id. The bridge issues its own token and never contacts the store.
 - **It does not convert anything.** Only epub and kepub files are offered. Pdf, mobi and azw3 in your library are skipped rather than converted.
 - **Audiobooks and podcasts are skipped.** The reader cannot play them.
@@ -115,9 +115,9 @@ The reader token is the only thing standing between the internet and your librar
 
 ## Status
 
-Version 0.1.0, first release. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
+Version 0.1.2. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
 
-What has not been exercised yet is a full sync against a physical reader, because the author does not own one. If you try it, an issue saying what happened is the single most useful thing you can send, working or not.
+The sync protocol has since been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers. What has still not been exercised is a full sync against a physical reader, because the author does not own one. If you try it, an issue saying what happened is the single most useful thing you can send, working or not.
 
 ## Development
 
