@@ -1,6 +1,6 @@
 """Serve an Audiobookshelf ebook library to a Kobo eReader over the native sync protocol."""
 
-__version__ = "0.1.1"
+__version__ = "0.1.3"
 
 __all__ = ["__version__", "create_app"]
 

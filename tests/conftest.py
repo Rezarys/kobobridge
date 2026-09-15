@@ -100,7 +100,10 @@ class FakeAudiobookshelf:
         self.calls.append(("cover_stream", item_id, width, height))
         if self.fail_with:
             raise self.fail_with
-        return FakeResponse(body=b"jpegbytes", headers={"Content-Type": "image/jpeg"})
+        return FakeResponse(
+            body=b"jpegbytes",
+            headers={"Content-Type": "image/jpeg", "Content-Length": "9"},
+        )
 
 
 @pytest.fixture

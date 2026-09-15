@@ -5,6 +5,9 @@ COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 RUN pip install --no-cache-dir .
 
+# Without this, output waits in a buffer instead of reaching "docker logs", and the container
+# looks silent even when the bridge is busy.
+ENV PYTHONUNBUFFERED=1
 ENV KOBOBRIDGE_PORT=8484
 ENV XDG_DATA_HOME=/data
 VOLUME ["/data"]

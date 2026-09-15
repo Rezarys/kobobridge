@@ -68,3 +68,24 @@ def test_an_in_memory_store_writes_nothing(tmp_path):
     store.put("book-uuid", {"a": 1})
     assert store.get("book-uuid") == {"a": 1}
     assert list(tmp_path.iterdir()) == []
+
+
+def test_the_reported_version_matches_the_package():
+    """0.1.2 shipped announcing itself as 0.1.1, which misleads every bug report."""
+    import tomllib
+    from pathlib import Path
+
+    import kobobridge
+
+    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    declared = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
+    assert kobobridge.__version__ == declared
+
+
+def test_the_command_line_accepts_a_log_level():
+    from kobobridge.__main__ import build_parser
+
+    args = build_parser().parse_args(["run", "--log-level", "debug"])
+    assert args.log_level == "debug"
+    default = build_parser().parse_args(["run"]).log_level
+    assert default in ("debug", "info", "warning", "error")

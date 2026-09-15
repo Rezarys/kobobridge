@@ -104,6 +104,30 @@ Optional:
 - `KOBOBRIDGE_LIBRARY_ID`: sync one library instead of every book library.
 - `KOBOBRIDGE_PORT`: port to bind, default 8484.
 - `KOBOBRIDGE_TIMEOUT`: seconds to wait on Audiobookshelf, default 30.
+- `KOBOBRIDGE_LOG_LEVEL`: `debug`, `info`, `warning` or `error`, default `info`.
+
+## Logs
+
+The bridge writes one line per call the reader makes, with the status, the size and how long it took:
+
+```
+2026-09-16T00:17:41 INFO    GET /kobo/<token>/v1/library/sync -> 200 48213 bytes in 1840 ms
+
+2026-09-16T00:17:41 INFO    sync: 100 of 2,000 books sent, more to come
+
+2026-09-16T00:17:43 INFO    GET /kobo/<token>/6f3d3205.../355/530/85/false/image.jpg -> 200 18244 bytes in 96 ms
+```
+
+The reader token is replaced with `<token>`, so a log can be pasted into a bug report as it is.
+
+`--log-level debug`, or `KOBOBRIDGE_LOG_LEVEL=debug`, adds every call the bridge makes to Audiobookshelf. That is the level to use when a cover or a download does not arrive, because it shows whether the reader asked at all and what Audiobookshelf answered:
+
+```
+docker run ... -e KOBOBRIDGE_LOG_LEVEL=debug kobobridge
+docker logs -f kobobridge
+```
+
+A cover that failed is logged with the book's name. A cover that was never asked for leaves no line at all, which is a different problem from one that was asked for and failed.
 
 ## Security
 
@@ -115,7 +139,7 @@ The reader token is the only thing standing between the internet and your librar
 
 ## Status
 
-Version 0.1.2. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
+Version 0.1.3. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
 
 The sync protocol has since been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers. What has still not been exercised is a full sync against a physical reader, because the author does not own one. If you try it, an issue saying what happened is the single most useful thing you can send, working or not.
 

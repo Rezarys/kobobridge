@@ -82,11 +82,16 @@ def cmd_setup(args):
 def cmd_run(args):
     config = _load_config()
     from .app import create_app
+    from .logs import LEVELS, configure, get_logger
     from waitress import serve
 
+    configure(level=LEVELS.get(args.log_level))
     app = create_app(config)
     _print_setup(config, args.host, args.port)
-    print("Listening on {0}:{1}. Stop with Ctrl+C.".format(args.host, args.port))
+    sys.stdout.flush()
+    get_logger().info(
+        "listening on %s:%s, logging at %s level", args.host, args.port, args.log_level
+    )
     serve(app, host=args.host, port=args.port, threads=args.threads)
     return 0
 
@@ -109,6 +114,11 @@ def build_parser():
 
     run = with_address(subparsers.add_parser("run", help="run the bridge"))
     run.add_argument("--threads", type=int, default=8, help="worker threads, default 8")
+    run.add_argument(
+        "--log-level", default=os.environ.get("KOBOBRIDGE_LOG_LEVEL", "info").lower(),
+        choices=("debug", "info", "warning", "error"),
+        help="how much to log, default info; debug adds every call made to Audiobookshelf",
+    )
     run.set_defaults(func=cmd_run)
 
     check = subparsers.add_parser("check", help="test the Audiobookshelf connection")

@@ -1,6 +1,5 @@
 """The application, and the small object that holds the library in front of it."""
 
-import logging
 import threading
 import time
 
@@ -8,6 +7,7 @@ from flask import Flask, jsonify
 
 from .abs import Audiobookshelf, AudiobookshelfError
 from .config import Config
+from .logs import configure, get_logger, request_logging
 from .resources import build_resources
 from .state import EbookSizeStore, ReadingStateStore, size_cache_path
 from . import kobo
@@ -48,10 +48,19 @@ class Bridge:
             )
             if fresh and not force:
                 return self._books
+            logger = get_logger()
+            started = time.monotonic()
             books = self.client.all_books(self.config.library_id)
             self._books = books
             self._by_uuid = {book.uuid: book for book in books}
             self._fetched_at = self._clock()
+            # On a large library this is the slow step, and it holds the lock, so a cover
+            # request that arrives meanwhile waits here. Saying so makes that visible.
+            logger.info(
+                "library listed: %s ebooks in %.1f s",
+                len(books),
+                time.monotonic() - started,
+            )
             return self._books
 
     def book_by_uuid(self, book_uuid):
@@ -63,6 +72,7 @@ class Bridge:
 def create_app(config=None, client=None, reading_states=None):
     """Build the WSGI application. ``config`` defaults to whatever the environment says."""
     config = config or Config.from_env()
+    configure()
     app = Flask(__name__)
     # The device is happier reading the keys in the order they were written.
     if hasattr(app, "json"):
@@ -90,6 +100,4 @@ def create_app(config=None, client=None, reading_states=None):
             }
         )
 
-    if not app.debug:
-        app.logger.setLevel(logging.INFO)
-    return app
+    return request_logging(app)

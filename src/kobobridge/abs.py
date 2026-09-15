@@ -6,6 +6,7 @@ a test asserts that no other HTTP verb appears in this file.
 """
 
 import re
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -13,6 +14,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 import requests
+
+from .logs import get_logger
 
 # Formats the eReader reads natively. Anything else in the library is skipped rather than
 # converted, because converting would mean writing somewhere.
@@ -142,10 +145,17 @@ class Audiobookshelf:
     def _get(self, path, **kwargs):
         """The only outbound call in the project. Read only by construction."""
         url = "{0}{1}".format(self.base_url, path)
+        logger = get_logger()
+        started = time.monotonic()
         try:
             response = self.session.get(url, timeout=self.timeout, **kwargs)
         except requests.RequestException as error:
+            logger.error("cannot reach %s: %s", url, error)
             raise AudiobookshelfError("cannot reach {0}: {1}".format(url, error))
+        logger.debug(
+            "GET %s -> %s in %.0f ms", path, response.status_code,
+            (time.monotonic() - started) * 1000.0,
+        )
         if response.status_code >= 400:
             raise AudiobookshelfError(
                 "{0} answered {1} for {2}".format(self.base_url, response.status_code, path)
@@ -222,12 +232,25 @@ class Audiobookshelf:
                 return book, stamp, None
 
         workers = min(SIZE_LOOKUP_WORKERS, len(pending))
+        failed = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             for book, stamp, size in pool.map(fetch, pending):
                 if size:
                     book.size = size
                     self.sizes.remember(book.item_id, stamp, size)
+                else:
+                    failed += 1
         self.sizes.flush()
+        # A book whose size could not be read keeps the whole item size from the listing. The
+        # device does its storage arithmetic on that figure, so a silent miss here is worth a
+        # line: it is one of the ways a download can end without a book appearing.
+        if failed:
+            get_logger().warning(
+                "could not read the ebook size of %s of %s books, "
+                "the listing figure is used for those",
+                failed,
+                len(pending),
+            )
 
     def all_books(self, only=None):
         found = []

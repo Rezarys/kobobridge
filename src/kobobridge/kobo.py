@@ -14,6 +14,7 @@ from datetime import timezone
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 
 from .abs import AudiobookshelfError
+from .logs import get_logger
 from .synctoken import HEADER as SYNC_HEADER
 from .synctoken import SyncToken
 from .state import utcnow
@@ -255,7 +256,7 @@ def sync():
         # The cache exists for the burst of metadata and cover calls that follows.
         books = library.refresh(force=True)
     except AudiobookshelfError as error:
-        current_app.logger.error("sync failed: %s", error)
+        get_logger().error("sync failed: %s", error)
         return jsonify({"error": str(error)}), 502
 
     batch, new_token, more = select_for_sync(books, token)
@@ -276,6 +277,12 @@ def sync():
     headers = {SYNC_HEADER: new_token.to_header_value()}
     if more:
         headers["x-kobo-sync"] = "continue"
+    get_logger().info(
+        "sync: %s of %s books sent, %s",
+        len(results),
+        len(books),
+        "more to come" if more else "device is up to date",
+    )
     response = jsonify(results)
     response.headers.extend(headers)
     return response
@@ -320,15 +327,24 @@ def state(book_uuid):
 @bp.route("/download/<item_id>")
 def download(item_id):
     """Stream one ebook straight through, so a large book never lands in memory."""
+    logger = get_logger()
     try:
         upstream = bridge().client.ebook_stream(item_id)
     except AudiobookshelfError as error:
-        current_app.logger.error("download failed: %s", error)
+        logger.error("download of %s failed: %s", item_id, error)
         return jsonify({"error": str(error)}), 502
     headers = {}
     for name in ("Content-Length", "Content-Disposition"):
         if name in upstream.headers:
             headers[name] = upstream.headers[name]
+    # The device sizes its download against what the sync answer announced. A mismatch here
+    # is the shape a download takes when the device reports success and shows no book.
+    logger.info(
+        "download of %s: upstream says %s bytes, type %s",
+        item_id,
+        headers.get("Content-Length", "no length"),
+        upstream.headers.get("Content-Type", "no type"),
+    )
     return Response(
         stream_with_context(upstream.iter_content(chunk_size=65536)),
         headers=headers,
@@ -339,16 +355,26 @@ def download(item_id):
 @bp.route("/<book_uuid>/<width>/<height>/<is_greyscale>/image.jpg")
 @bp.route("/<book_uuid>/<width>/<height>/<quality>/<is_greyscale>/image.jpg")
 def cover(book_uuid, width, height, is_greyscale, quality=None):
+    logger = get_logger()
     book = find_book(book_uuid)
     if book is None:
+        logger.warning("cover asked for %s, which is not in the library listing", book_uuid)
         return jsonify({"error": "unknown book"}), 404
     try:
         upstream = bridge().client.cover_stream(book.item_id, width=width, height=height)
     except AudiobookshelfError as error:
-        current_app.logger.error("cover failed: %s", error)
+        # Audiobookshelf answers 404 here for an item that simply has no cover art, which is
+        # not a bridge failure and is worth telling apart from an unreachable server.
+        logger.warning("cover of %s (%s) failed: %s", book.title, book.item_id, error)
         return jsonify({"error": str(error)}), 502
+    headers = {}
+    # Carried through so the size lands in the log, which is what tells a cover that was
+    # served from one that was asked for and came back empty.
+    if "Content-Length" in upstream.headers:
+        headers["Content-Length"] = upstream.headers["Content-Length"]
     return Response(
         stream_with_context(upstream.iter_content(chunk_size=32768)),
+        headers=headers,
         content_type=upstream.headers.get("Content-Type", "image/jpeg"),
     )
 
@@ -362,13 +388,47 @@ def tags(rest=None):
 
 @bp.route("/v1/analytics/<path:rest>", methods=["GET", "POST"])
 @bp.route("/v1/assets", methods=["GET"])
+@bp.route("/v1/categories", methods=["GET", "POST"])
+@bp.route("/v1/configuration", methods=["GET", "POST"])
 @bp.route("/v1/deals", methods=["GET", "POST"])
 @bp.route("/v1/affiliate", methods=["GET", "POST"])
+@bp.route("/v1/funnelmetrics", methods=["GET", "POST"])
 @bp.route("/v1/products", methods=["GET", "POST"])
 @bp.route("/v1/products/<path:rest>", methods=["GET", "POST"])
+@bp.route("/v2/products", methods=["GET", "POST"])
 @bp.route("/v1/user/<path:rest>", methods=["GET", "POST"])
 def quiet(rest=None):
     """Everything the store would answer and a private library has no opinion about."""
+    return jsonify({})
+
+
+@bp.route("/v1/library/downloadkeys", methods=["GET", "POST"])
+@bp.route("/v1/library/downloadlink", methods=["GET", "POST"])
+def download_keys():
+    """The key exchange a store book needs before it can be opened.
+
+    A book served from your own library carries no protection, so there is no key to hand
+    over and the device downloads straight from the address in the sync answer. What matters
+    is that this address answers at all: the resource table names it, and a device that asks
+    here and gets nothing back can abandon a download it has already reported as finished.
+    """
+    return jsonify({})
+
+
+@bp.route("/v1/library/search", methods=["GET", "POST"])
+def library_search():
+    """Searching the library from the device is not mirrored, so the result is empty."""
+    return jsonify([])
+
+
+@bp.route("/v1/library/<ids>", methods=["GET", "POST", "DELETE"])
+def entitlements(ids):
+    """Adding or removing a book from the device side.
+
+    The library lives in Audiobookshelf and the bridge only reads it, so nothing is created
+    or deleted here. The address is answered rather than left to fail because the resource
+    table advertises it.
+    """
     return jsonify({})
 
 
