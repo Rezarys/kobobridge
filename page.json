@@ -1,0 +1,48 @@
+{
+  "name": "kobobridge",
+  "tagline": "Send the ebooks from your own Audiobookshelf library to a Kobo eReader over wifi, using the reader's own sync protocol.",
+  "install": "pip install kobobridge",
+  "does": [
+    "New epubs in Audiobookshelf appear on the reader after a sync.",
+    "Covers, authors, series and descriptions come across.",
+    "Reading progress from the reader is stored by the bridge.",
+    "Large libraries are sent in batches, so the first sync completes.",
+    "Runs on your own machine, next to the server you already run."
+  ],
+  "does_not": [
+    "It never writes to your library. Every call to Audiobookshelf is a GET, and a test asserts it.",
+    "It does not touch any account on the manufacturer's store. No store credential, no user key, no device id. Setup points the reader at the bridge instead of the store, so while it is pointed here the reader does not sync with the store. Restoring one line in the reader's config file puts it back.",
+    "It does not convert anything. Only epub and kepub files are offered, and other formats are skipped.",
+    "Audiobooks and podcasts are skipped, because the reader cannot play them.",
+    "Highlights and annotations are not carried. The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics.",
+    "Shelves and collections are not mirrored yet.",
+    "No physical reader has been tested, on any model and on any firmware version. The protocol has been exercised over HTTP only, as the status below says.",
+    "No telemetry, no phoning home, no analytics. Nothing about your library leaves your machine."
+  ],
+  "sections": [
+    {
+      "title": "Setup",
+      "body": "You run the bridge on your own machine, then point the reader at it once: plug the reader into a computer over USB and change one line in its config file. The full setup steps are in the readme:",
+      "link": {
+        "label": "setup steps",
+        "url": "https://github.com/Rezarys/kobobridge#setup"
+      }
+    },
+    {
+      "title": "Status",
+      "body": "Version 0.1.3. The sync protocol has been exercised over HTTP against a real Audiobookshelf library of 1,374 books, by a user of the project rather than by me: initialization, auth, paged sync to completion, downloads and covers. A full sync against a physical reader has not been tested, because I do not own one. If you try it, an issue saying what happened is the most useful thing you can send, working or not."
+    }
+  ],
+  "contact": {
+    "label": "open an issue",
+    "url": "https://github.com/Rezarys/kobobridge/issues"
+  },
+  "source_url": "https://github.com/Rezarys/kobobridge",
+  "request_url": "https://github.com/advplyr/audiobookshelf/issues/3504",
+  "license": "MIT",
+  "author": "Younes Z.",
+  "notices": [
+    "Not affiliated with Audiobookshelf, and not affiliated with Rakuten Kobo Inc. This is an independent project.",
+    "\"Kobo\" is a trademark of its owner and is used here only to say which device the software talks to."
+  ]
+}

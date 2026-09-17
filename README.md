@@ -32,7 +32,9 @@ Worth reading before you install.
 - **It does not touch any account on the manufacturer's store.** No store credential, no user key, no device id. The bridge issues its own token and never contacts the store.
 - **It does not convert anything.** Only epub and kepub files are offered. Pdf, mobi and azw3 in your library are skipped rather than converted.
 - **Audiobooks and podcasts are skipped.** The reader cannot play them.
+- **Highlights and annotations are not carried.** The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics; anything else the reader sends with them is dropped, and a test asserts that.
 - **Shelves and collections are not mirrored yet.**
+- **No physical reader has been tested, on any model and on any firmware version.** The protocol has been exercised over HTTP only. See Status below for exactly what was exercised and by whom.
 - **No telemetry, no phoning home, no analytics.** Nothing about your library leaves your machine.
 
 ## Setup

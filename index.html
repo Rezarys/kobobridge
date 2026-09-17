@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>kobobridge</title>
+    <meta name="description" content="Send the ebooks from your own Audiobookshelf library to a Kobo eReader over wifi, using the reader&#x27;s own sync protocol.">
+    <style>:root { color-scheme: light dark; } * { box-sizing: border-box; } body { margin: 0 auto; max-width: 42rem; padding: 2rem 1.25rem 4rem; font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; } h1 { font-size: 2rem; margin: 0 0 .25rem; } h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; } .tagline { font-size: 1.15rem; margin: 0 0 1.5rem; } pre { padding: .85rem 1rem; overflow-x: auto; border-radius: 6px; background: #f4f4f4; border: 1px solid #ddd; } code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .95rem; } footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid #ddd; font-size: .9rem; } footer p { margin: .4rem 0; } @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } pre { background: #1c1c1c; border-color: #333; } footer { border-color: #333; } a { color: #7ab; } }</style>
+  </head>
+  <body>
+    <h1>kobobridge</h1>
+    <p class="tagline">Send the ebooks from your own Audiobookshelf library to a Kobo eReader over wifi, using the reader&#x27;s own sync protocol.</p>
+    <pre><code>pip install kobobridge</code></pre>
+    <h2>What it does</h2>
+    <ul>
+      <li>New epubs in Audiobookshelf appear on the reader after a sync.</li>
+      <li>Covers, authors, series and descriptions come across.</li>
+      <li>Reading progress from the reader is stored by the bridge.</li>
+      <li>Large libraries are sent in batches, so the first sync completes.</li>
+      <li>Runs on your own machine, next to the server you already run.</li>
+    </ul>
+    <h2>What it does not do</h2>
+    <ul>
+      <li>It never writes to your library. Every call to Audiobookshelf is a GET, and a test asserts it.</li>
+      <li>It does not touch any account on the manufacturer&#x27;s store. No store credential, no user key, no device id. Setup points the reader at the bridge instead of the store, so while it is pointed here the reader does not sync with the store. Restoring one line in the reader&#x27;s config file puts it back.</li>
+      <li>It does not convert anything. Only epub and kepub files are offered, and other formats are skipped.</li>
+      <li>Audiobooks and podcasts are skipped, because the reader cannot play them.</li>
+      <li>Highlights and annotations are not carried. The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics.</li>
+      <li>Shelves and collections are not mirrored yet.</li>
+      <li>No physical reader has been tested, on any model and on any firmware version. The protocol has been exercised over HTTP only, as the status below says.</li>
+      <li>No telemetry, no phoning home, no analytics. Nothing about your library leaves your machine.</li>
+    </ul>
+    <h2>Setup</h2>
+    <p>You run the bridge on your own machine, then point the reader at it once: plug the reader into a computer over USB and change one line in its config file. The full setup steps are in the readme: <a href="https://github.com/Rezarys/kobobridge#setup">setup steps</a>.</p>
+    <h2>Status</h2>
+    <p>Version 0.1.3. The sync protocol has been exercised over HTTP against a real Audiobookshelf library of 1,374 books, by a user of the project rather than by me: initialization, auth, paged sync to completion, downloads and covers. A full sync against a physical reader has not been tested, because I do not own one. If you try it, an issue saying what happened is the most useful thing you can send, working or not.</p>
+    <footer>
+      <p><a href="https://github.com/Rezarys/kobobridge">Source code</a></p>
+      <p><a href="https://github.com/advplyr/audiobookshelf/issues/3504">The request this answers</a></p>
+      <p>Contact: <a href="https://github.com/Rezarys/kobobridge/issues">open an issue</a></p>
+      <p>Not affiliated with Audiobookshelf, and not affiliated with Rakuten Kobo Inc. This is an independent project.</p>
+      <p>&quot;Kobo&quot; is a trademark of its owner and is used here only to say which device the software talks to.</p>
+      <p>MIT license. By Younes Z. Built with AI assistance, reviewed and tested by me.</p>
+      <p>No telemetry, no cookies, no analytics on this page.</p>
+    </footer>
+  </body>
+</html>
