@@ -25,7 +25,9 @@
       <li>It does not touch any account on the manufacturer&#x27;s store. No store credential, no user key, no device id. Setup points the reader at the bridge instead of the store, so while it is pointed here the reader does not sync with the store. Restoring one line in the reader&#x27;s config file puts it back.</li>
       <li>It does not convert anything. Only epub and kepub files are offered, and other formats are skipped.</li>
       <li>Audiobooks and podcasts are skipped, because the reader cannot play them.</li>
+      <li>Highlights and annotations are not carried. The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics.</li>
       <li>Shelves and collections are not mirrored yet.</li>
+      <li>No physical reader has been tested, on any model and on any firmware version. The protocol has been exercised over HTTP only, as the status below says.</li>
       <li>No telemetry, no phoning home, no analytics. Nothing about your library leaves your machine.</li>
     </ul>
     <h2>Setup</h2>
