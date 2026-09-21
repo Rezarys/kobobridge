@@ -435,6 +435,23 @@ def test_progress_is_never_pushed_into_the_library(client, kobo_url, upstream):
 # ---------------------------------------------------------------------------
 
 
+def test_a_store_address_answers_for_its_children_too(client, kobo_url, upstream):
+    """A reader asks for a child of an address, not only the address itself.
+
+    A Libra Colour on 4.46 asks for `/v1/categories/<id>` nine times while it draws its
+    home screen. `/v1/categories` alone left every one of those a 404.
+    """
+    paths = (
+        "/v1/categories/00000000-0000-0000-0000-000000000001",
+        "/v1/categories/00000000-0000-0000-0000-000000000001/featured",
+        "/v1/products/1b5ea2b4-19b5-45ea-a979-8c2624111ed8/recommendations",
+        "/v1/user/browsehistory",
+    )
+    for path in paths:
+        assert client.get(kobo_url(path)).status_code == 200, path
+    assert upstream.calls == [], "no store endpoint may touch the library"
+
+
 def test_store_endpoints_answer_without_reaching_anyone(client, kobo_url, upstream):
     for path in ("/v1/products/dailydeal", "/v1/user/profile", "/v1/analytics/gettests"):
         assert client.get(kobo_url(path)).status_code == 200

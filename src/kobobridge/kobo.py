@@ -453,6 +453,7 @@ def tags(rest=None):
 @bp.route("/v1/analytics/<path:rest>", methods=["GET", "POST"])
 @bp.route("/v1/assets", methods=["GET"])
 @bp.route("/v1/categories", methods=["GET", "POST"])
+@bp.route("/v1/categories/<path:rest>", methods=["GET", "POST"])
 @bp.route("/v1/configuration", methods=["GET", "POST"])
 @bp.route("/v1/deals", methods=["GET", "POST"])
 @bp.route("/v1/affiliate", methods=["GET", "POST"])
