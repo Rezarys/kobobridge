@@ -129,7 +129,16 @@ class Book:
 
 
 class AudiobookshelfError(RuntimeError):
-    """The Audiobookshelf server refused or could not answer a request."""
+    """The Audiobookshelf server refused or could not answer a request.
+
+    ``status`` carries the code the server answered, or ``None`` when the server could not be
+    reached at all. A 404 on a cover means the book has no cover art, which is a fact about
+    the library and not a failure of the bridge, so callers need to tell the two apart.
+    """
+
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 class Audiobookshelf:
@@ -158,7 +167,8 @@ class Audiobookshelf:
         )
         if response.status_code >= 400:
             raise AudiobookshelfError(
-                "{0} answered {1} for {2}".format(self.base_url, response.status_code, path)
+                "{0} answered {1} for {2}".format(self.base_url, response.status_code, path),
+                status=response.status_code,
             )
         return response
 
@@ -282,13 +292,24 @@ class Audiobookshelf:
         """The ebook file itself, streamed so a large book never lands in memory."""
         return self._get("/api/items/{0}/ebook".format(item_id), stream=True)
 
-    def cover_stream(self, item_id, width=None, height=None):
+    def cover_stream(self, item_id, width=None):
+        """One cover, at one of a small fixed set of widths.
+
+        Two details of the server decide the shape of this call, both read in its source.
+        It caches a rendered cover under the exact pair of dimensions it was asked for
+        (``<item>_<width>x<height>``), and it renders by spawning ffmpeg
+        (``scale=<width>:<height>``). So every distinct size that is asked for costs one
+        process and one cache entry, and a size that is never repeated is never a cache hit.
+
+        Height is therefore never sent. Passing width alone gives ``scale=<width>:-1``, which
+        keeps the cover's own proportions instead of stretching it to the reader's frame, and
+        it leaves one cache entry per width rather than one per pair. The caller is expected
+        to round the reader's request to a few fixed widths; see ``kobo.cover_width``.
+        """
         # The bridge serves covers on a route the device reads as image.jpg. Audiobookshelf
         # answers webp whenever the request accepts it, and an Accept of "*/*" counts, so the
         # format is asked for rather than left to content negotiation.
         params = {"format": "jpeg"}
         if width:
             params["width"] = width
-        if height:
-            params["height"] = height
         return self._get("/api/items/{0}/cover".format(item_id), params=params, stream=True)

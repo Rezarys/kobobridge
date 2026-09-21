@@ -36,6 +36,9 @@ class Bridge:
         self._books = []
         self._by_uuid = {}
         self._fetched_at = None
+        # True between the moment the bridge tells the reader there is more to come and the
+        # moment it tells it there is not. See :meth:`listing`.
+        self.sync_unfinished = False
 
     def resources(self, bridge_prefix, bridge_root):
         return build_resources(bridge_prefix, bridge_root)
@@ -62,6 +65,21 @@ class Bridge:
                 time.monotonic() - started,
             )
             return self._books
+
+    def listing(self):
+        """The listing as it already stands, without asking the server again.
+
+        A library too large to send in one answer is sent over several rounds, and the reader
+        comes straight back for the next one. Those rounds are the reader walking a cursor
+        through a list the bridge has already promised it, so re-listing between them is both
+        slow and wrong: on two thousand books it turned one listing into twenty, and books
+        could shift under the cursor between rounds. Only a library that has never been listed
+        at all is fetched here.
+        """
+        with self._lock:
+            if self._fetched_at is not None:
+                return self._books
+        return self.refresh(force=True)
 
     def book_by_uuid(self, book_uuid):
         if self._fetched_at is None:

@@ -15,6 +15,7 @@ from flask import Blueprint, Response, current_app, jsonify, request, stream_wit
 
 from .abs import AudiobookshelfError
 from .logs import get_logger
+from .synctoken import EPOCH
 from .synctoken import HEADER as SYNC_HEADER
 from .synctoken import SyncToken
 from .state import utcnow
@@ -78,13 +79,57 @@ def prefix():
 
 
 def find_book(book_uuid):
-    """Resolve a device side identifier back to a library item, refreshing once if needed."""
+    """Resolve a device side identifier back to a library item.
+
+    A miss asks for a refresh, because the reader may be asking about a book added since the
+    listing was taken. The refresh is not forced: on a large library the listing is the slow
+    step and it holds the lock, so forcing it here turned one unknown book into one full
+    listing per request. A reader that asks for the covers of a hundred unknown books in a
+    burst then queued a hundred listings, each behind the last, and nothing else was served
+    meanwhile. Honouring the cache window bounds that at one listing per window.
+    """
     library = bridge()
     book = library.book_by_uuid(book_uuid)
     if book is None:
-        library.refresh(force=True)
+        library.refresh()
         book = library.book_by_uuid(book_uuid)
     return book
+
+
+def unreachable(error, book_uuid):
+    """The answer when a lookup could not reach the library at all.
+
+    A lookup reaches the server, and the server can be down. Before this, that came out of a
+    cover or a metadata request as an unhandled error and a stack trace, which is both the
+    least useful thing to put in a bug report and the wrong thing to tell a reader: an
+    unreachable library is not a book that does not exist.
+    """
+    get_logger().error("looking up %s failed: %s", book_uuid, error)
+    return jsonify({"error": str(error)}), 502
+
+
+# Audiobookshelf renders a cover by spawning ffmpeg and caches the result under the dimensions
+# it was asked for, so a size it has not been asked for before is always a fresh process and
+# never a cache hit. Rounding the request to a few fixed sizes is what makes that cache work,
+# and it is the same move the long standing open implementation makes for the same reason.
+#
+# The rounding is on the width, because the width is what is sent. Rounding the height and
+# answering with a width mixes two axes: a reader asking for 355 by 530, the shape that shows
+# up in a library grid, would land in a band chosen by 530 and be served a 720 wide image for
+# a 355 wide slot. That is four times the pixels on exactly the path this is meant to unclog.
+COVER_WIDTHS = (360, 720, 1080)
+
+
+def cover_width(width):
+    """Round the width the reader asked for up to the nearest one the bridge will ask for."""
+    try:
+        wanted = int(width)
+    except (TypeError, ValueError):
+        wanted = 0
+    for available in COVER_WIDTHS:
+        if wanted <= available:
+            return available
+    return COVER_WIDTHS[-1]
 
 
 # ---------------------------------------------------------------------------
@@ -251,10 +296,14 @@ def select_for_sync(books, token):
 def sync():
     library = bridge()
     token = SyncToken.from_headers(request.headers)
+    # A sync that opens reads the library afresh, so that a book added a moment ago shows up.
+    # A sync that is being continued, because the last answer said there was more to come,
+    # walks the list that answer promised. Re-listing between rounds made a library of two
+    # thousand books twenty full listings instead of one, which is most of why a first sync
+    # took so long, and it let books shift under the cursor between two rounds.
+    continuing = library.sync_unfinished and token.books_last_modified > EPOCH
     try:
-        # A sync always reads the library afresh: a book added a moment ago has to show up.
-        # The cache exists for the burst of metadata and cover calls that follows.
-        books = library.refresh(force=True)
+        books = library.listing() if continuing else library.refresh(force=True)
     except AudiobookshelfError as error:
         get_logger().error("sync failed: %s", error)
         return jsonify({"error": str(error)}), 502
@@ -274,6 +323,7 @@ def sync():
         )
         results.append({key: entitlement})
 
+    library.sync_unfinished = more
     headers = {SYNC_HEADER: new_token.to_header_value()}
     if more:
         headers["x-kobo-sync"] = "continue"
@@ -290,7 +340,10 @@ def sync():
 
 @bp.route("/v1/library/<book_uuid>/metadata")
 def metadata(book_uuid):
-    book = find_book(book_uuid)
+    try:
+        book = find_book(book_uuid)
+    except AudiobookshelfError as error:
+        return unreachable(error, book_uuid)
     if book is None:
         return jsonify([]), 404
     return jsonify([book_metadata(book)])
@@ -298,7 +351,10 @@ def metadata(book_uuid):
 
 @bp.route("/v1/library/<book_uuid>/state", methods=["GET", "PUT"])
 def state(book_uuid):
-    book = find_book(book_uuid)
+    try:
+        book = find_book(book_uuid)
+    except AudiobookshelfError as error:
+        return unreachable(error, book_uuid)
     if book is None:
         return jsonify([]), 404
     if request.method == "GET":
@@ -356,15 +412,23 @@ def download(item_id):
 @bp.route("/<book_uuid>/<width>/<height>/<quality>/<is_greyscale>/image.jpg")
 def cover(book_uuid, width, height, is_greyscale, quality=None):
     logger = get_logger()
-    book = find_book(book_uuid)
+    try:
+        book = find_book(book_uuid)
+    except AudiobookshelfError as error:
+        return unreachable(error, book_uuid)
     if book is None:
         logger.warning("cover asked for %s, which is not in the library listing", book_uuid)
         return jsonify({"error": "unknown book"}), 404
     try:
-        upstream = bridge().client.cover_stream(book.item_id, width=width, height=height)
+        upstream = bridge().client.cover_stream(book.item_id, width=cover_width(width))
     except AudiobookshelfError as error:
-        # Audiobookshelf answers 404 here for an item that simply has no cover art, which is
-        # not a bridge failure and is worth telling apart from an unreachable server.
+        # Audiobookshelf answers 404 here for an item that simply has no cover art. That is a
+        # fact about the library, not a failure of the bridge, and it has to be passed on as
+        # itself: a reader told 404 shows its own placeholder and moves on, while a reader
+        # told 502 has been handed a server fault and may back off the whole run of covers.
+        if error.status == 404:
+            logger.info("%s (%s) has no cover art", book.title, book.item_id)
+            return jsonify({"error": "no cover art"}), 404
         logger.warning("cover of %s (%s) failed: %s", book.title, book.item_id, error)
         return jsonify({"error": str(error)}), 502
     headers = {}

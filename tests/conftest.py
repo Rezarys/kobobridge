@@ -60,6 +60,8 @@ class FakeAudiobookshelf:
         self.libraries_payload = libraries or [{"id": "lib-1", "mediaType": "book"}]
         self.calls = []
         self.fail_with = None
+        # Set on its own to make the cover call fail while the listing keeps working.
+        self.cover_fails_with = None
 
     # The real client exposes exactly these, and all of them are reads.
     def ping(self):
@@ -96,10 +98,10 @@ class FakeAudiobookshelf:
             headers={"Content-Type": "application/epub+zip", "Content-Length": "20"},
         )
 
-    def cover_stream(self, item_id, width=None, height=None):
-        self.calls.append(("cover_stream", item_id, width, height))
-        if self.fail_with:
-            raise self.fail_with
+    def cover_stream(self, item_id, width=None):
+        self.calls.append(("cover_stream", item_id, width))
+        if self.cover_fails_with or self.fail_with:
+            raise self.cover_fails_with or self.fail_with
         return FakeResponse(
             body=b"jpegbytes",
             headers={"Content-Type": "image/jpeg", "Content-Length": "9"},

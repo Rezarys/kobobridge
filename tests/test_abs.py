@@ -195,5 +195,8 @@ def test_a_cover_is_asked_for_as_jpeg(monkeypatch):
         return FakeResponse()
 
     monkeypatch.setattr(client, "_get", fake_get)
-    client.cover_stream("li_one", width=300, height=400)
-    assert seen == {"format": "jpeg", "width": 300, "height": 400}
+    client.cover_stream("li_one", width=360)
+    # Width alone. A height as well would stretch the cover to the reader's frame instead of
+    # keeping its own proportions, and would make the server cache one rendering per pair of
+    # dimensions rather than one per width.
+    assert seen == {"format": "jpeg", "width": 360}

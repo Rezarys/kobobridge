@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.4
+
+- Covers are asked for at one of three widths instead of at whatever size the reader asked for. Audiobookshelf renders a cover by starting ffmpeg, one process per rendering, and caches the result under the exact dimensions it was asked for, so an unrounded size was a fresh process every time and never a cache hit.
+- No height is sent with a cover any more, only a width. A height as well stretched the cover to fit the reader's frame rather than keeping its own proportions, and it made the server hold one rendering per pair of dimensions rather than one per width.
+- A book that has no cover art is reported as missing rather than as a server failure. Audiobookshelf answers 404 for such a book, and that was being passed on as 502, which says the server is broken rather than that this one book has no picture. A client handed a server fault may give up on the covers that follow it.
+- A library too large for one answer is now listed once for the whole sync rather than once per round. A library of two thousand books is sent over about twenty rounds, and each round read the whole library again. The listing is the slow step: it holds a lock, and it resolves the true size of every new book one request at a time. It also meant books could shift under the reader's cursor between two rounds.
+- A cover asked for a book that is not in the listing no longer forces a full listing of its own. A reader asking for a burst of such covers queued one listing per request, each waiting on the last, and nothing else was served in the meantime.
+- A lookup that cannot reach Audiobookshelf answers 502 instead of failing with a stack trace.
+
+Reported by @zeeohee0 in issue 3.
+
 ## 0.1.3
 
 - The bridge logs what it does. Every call from the reader is written with its status, its size and how long it took, a library listing reports how many books it found and how long it took, and a failure names the book it was about when the bridge knows which one it was. The device token is replaced with `<token>` in the log, so a log can be pasted into a bug report as it is. `--log-level debug` adds every call made to Audiobookshelf. Before this, the server ran under waitress, which writes nothing per request, and there was no way to tell a reader that never asked for a cover from one that asked and got an error.

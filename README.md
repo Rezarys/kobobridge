@@ -141,7 +141,7 @@ The reader token is the only thing standing between the internet and your librar
 
 ## Status
 
-Version 0.1.3. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
+Version 0.1.4. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
 
 The sync protocol has since been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers. What has still not been exercised is a full sync against a physical reader, because the author does not own one. If you try it, an issue saying what happened is the single most useful thing you can send, working or not.
 
