@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `/v1/categories/<id>` answers rather than 404s. 0.1.3 added `/v1/categories`, but a
+  reader asks for a child of it: a Libra Colour on 4.46 asks nine times while it draws
+  its home screen, and every one of those was a 404.
+
 ## 0.1.4
 
 - Covers are asked for at one of three widths instead of at whatever size the reader asked for. Audiobookshelf renders a cover by starting ffmpeg, one process per rendering, and caches the result under the exact dimensions it was asked for, so an unrounded size was a fresh process every time and never a cache hit.
