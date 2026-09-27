@@ -34,7 +34,7 @@ Worth reading before you install.
 - **Audiobooks and podcasts are skipped.** The reader cannot play them.
 - **Highlights and annotations are not carried.** The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics; anything else the reader sends with them is dropped, and a test asserts that.
 - **Shelves and collections are not mirrored yet.**
-- **No physical reader has been tested, on any model and on any firmware version.** The protocol has been exercised over HTTP only. See Status below for exactly what was exercised and by whom.
+- **The author owns no reader, so nothing here was tested by the author against a device.** One reader of this repository has since run a complete sync on one model and one firmware version, and another reports it failing on theirs. See Status below for exactly what was exercised, by whom, and what is still open.
 - **No telemetry, no phoning home, no analytics.** Nothing about your library leaves your machine.
 
 ## Setup
@@ -141,9 +141,11 @@ The reader token is the only thing standing between the internet and your librar
 
 ## Status
 
-Version 0.1.4. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
+Version 0.1.5. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
 
-The sync protocol has since been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers. What has still not been exercised is a full sync against a physical reader, because the author does not own one. If you try it, an issue saying what happened is the single most useful thing you can send, working or not.
+The sync protocol has been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers.
+
+It has also been run against a physical device, and not by the author, who owns none. One reader ran a complete sync of a three book library on a Libra Colour on firmware 4.46.23836 against version 0.1.4 and posted the trace in issue 6: fifty five requests, none of them a failure, and three files delivered matching their advertised sizes. Another reader reports the opposite on their own device against the same version, in issue 3: the books appear on the shelf and the files never arrive, and which device that is has not been established. So one model and one firmware version are known to work for a small library, nothing more than that is, and a report of either kind is the single most useful thing you can send.
 
 ## Development
 

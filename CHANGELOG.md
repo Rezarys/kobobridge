@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.5
 
-- `/v1/categories/<id>` answers rather than 404s. 0.1.3 added `/v1/categories`, but a
-  reader asks for a child of it: a Libra Colour on 4.46 asks nine times while it draws
-  its home screen, and every one of those was a 404.
+- `/v1/categories/<id>` answers rather than 404s. 0.1.3 added `/v1/categories`, but a reader asks for a child of it: a Libra Colour on 4.46 asks nine times while it draws its home screen, and every one of those was a 404.
+- A book this bridge does not serve is answered with an empty body and a success status instead of 404, on both `/v1/library/<id>/metadata` and `/v1/library/<id>/state`. A reader holds books from whatever it was synced to before, and it asks about those too. A 404 says the request itself was wrong, so the reader has no reason to stop asking, and the same set of books failed on every sync pass. This is what the long standing open implementation of this protocol answers when it is not proxying to the manufacturer's store, which is this project's permanent position.
+- An identifier that is not shaped like a UUID no longer costs a full listing of the library. Every identifier this bridge mints is a version 5 UUID, so a plain number cannot be in any listing however recent, and asking the library again for one was work that could not succeed. On a library of two thousand books the first such request in each sync pass paid a listing of the whole library.
+
+The last two were reported by @zeeohee0 in issue 3, with a log showing the same identifiers, about thirty five of them, failing on every pass. The first was fixed by @Bothari in pull request 5.
 
 ## 0.1.4
 

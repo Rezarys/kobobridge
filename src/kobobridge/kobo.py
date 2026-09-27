@@ -78,6 +78,21 @@ def prefix():
 # ---------------------------------------------------------------------------
 
 
+def is_bridge_id(book_uuid):
+    """Whether this identifier could have been minted by the bridge at all.
+
+    Every identifier the bridge hands the reader is a version 5 UUID of a library item id, so
+    anything that is not shaped like a UUID cannot be in the listing however recent the
+    listing is. A reader carries identifiers from wherever it was synced before, and those
+    are not ours to resolve.
+    """
+    try:
+        uuid.UUID(str(book_uuid))
+    except (ValueError, AttributeError, TypeError):
+        return False
+    return True
+
+
 def find_book(book_uuid):
     """Resolve a device side identifier back to a library item.
 
@@ -87,13 +102,33 @@ def find_book(book_uuid):
     listing per request. A reader that asks for the covers of a hundred unknown books in a
     burst then queued a hundred listings, each behind the last, and nothing else was served
     meanwhile. Honouring the cache window bounds that at one listing per window.
+
+    An identifier that is not shaped like a UUID skips the refresh entirely: no listing can
+    ever contain it, so re-listing the library to look for it is work that cannot succeed.
     """
+    if not is_bridge_id(book_uuid):
+        return None
     library = bridge()
     book = library.book_by_uuid(book_uuid)
     if book is None:
         library.refresh()
         book = library.book_by_uuid(book_uuid)
     return book
+
+
+def not_ours(book_uuid):
+    """The answer for a book this bridge does not serve.
+
+    The reader asks about every book it holds, including books it was given by whatever it
+    was synced to before this bridge existed. Those identifiers are not ours and never will
+    be. Answering 404 tells the reader the request itself was wrong, and a reader that is
+    told that on every sync pass has no way to stop asking. The long standing open
+    implementation of this protocol answers such a request with an empty body and a success
+    status whenever it is not proxying to the manufacturer's store, which is this bridge's
+    permanent position, so that is what is answered here.
+    """
+    get_logger().debug("%s is not a book this bridge serves, answered empty", book_uuid)
+    return jsonify({})
 
 
 def unreachable(error, book_uuid):
@@ -345,7 +380,7 @@ def metadata(book_uuid):
     except AudiobookshelfError as error:
         return unreachable(error, book_uuid)
     if book is None:
-        return jsonify([]), 404
+        return not_ours(book_uuid)
     return jsonify([book_metadata(book)])
 
 
@@ -356,7 +391,7 @@ def state(book_uuid):
     except AudiobookshelfError as error:
         return unreachable(error, book_uuid)
     if book is None:
-        return jsonify([]), 404
+        return not_ours(book_uuid)
     if request.method == "GET":
         return jsonify([reading_state(book)])
 

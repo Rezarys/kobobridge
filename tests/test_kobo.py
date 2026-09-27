@@ -277,9 +277,40 @@ def test_a_kepub_is_announced_as_a_kepub(client, kobo_url):
     assert body[0]["Series"]["NumberFloat"] == 3.0
 
 
-def test_metadata_for_an_unknown_book_is_a_clean_404(client, kobo_url):
-    response = client.get(kobo_url("/v1/library/00000000-0000-0000-0000-000000000009/metadata"))
-    assert response.status_code == 404
+def test_a_book_this_bridge_does_not_serve_is_answered_empty(client, kobo_url):
+    """A reader holds books from wherever it was synced before, and asks about those too.
+
+    Answering 404 told the reader its request was wrong, so it asked again on the next pass,
+    and on every pass after that. The long standing open implementation of this protocol
+    answers an unknown book with an empty body and a success status whenever it is not
+    proxying to the manufacturer's store, which is this bridge's permanent position.
+    """
+    for path in ("metadata", "state"):
+        response = client.get(
+            kobo_url("/v1/library/00000000-0000-0000-0000-000000000009/" + path)
+        )
+        assert response.status_code == 200, path
+        assert loads(response) == {}, path
+
+
+def test_a_numeric_identifier_is_answered_without_relisting_the_library(
+    client, kobo_url, upstream
+):
+    """Reported by zeeohee0 in issue 3: the same thirty five identifiers, every sync pass.
+
+    A reader synced to another server first carries that server's identifiers, which are
+    plain numbers there. No identifier this bridge mints is a number, so no listing can ever
+    contain one, and asking the library again in the hope that it does is work that cannot
+    succeed. The first such request paid a full listing of a library of two thousand books.
+    """
+    upstream.calls.clear()
+    response = client.put(
+        kobo_url("/v1/library/4613/state"),
+        json={"ReadingStates": [{"StatusInfo": {"Status": "Finished"}}]},
+    )
+    assert response.status_code == 200
+    assert loads(response) == {}
+    assert upstream.calls == [], "an identifier that cannot be ours must cost no lookup"
 
 
 def test_a_download_streams_the_file_through(client, kobo_url, upstream):
