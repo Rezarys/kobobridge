@@ -2,6 +2,8 @@
   "name": "kobobridge",
   "tagline": "Send the ebooks from your own Audiobookshelf library to a Kobo eReader over wifi, using the reader's own sync protocol.",
   "install": "pip install kobobridge",
+  "screenshot": "dev/kobobridge/demo/kobobridge-demo.svg",
+  "screenshot_alt": "An 80 second replay of a terminal session: kobobridge check and kobobridge run on a made-up library of six books, first syncing the whole library, then one collection of two books with a test key.",
   "does": [
     "New epubs in Audiobookshelf appear on the reader after a sync.",
     "Covers, authors, series and descriptions come across.",
@@ -29,8 +31,16 @@
       }
     },
     {
-      "title": "Syncing one collection: a 15 euro key, once",
-      "body": "Syncing the whole library is free, and so is every bug fix. A key, 15 euros once with no subscription, lets the bridge sync a single Audiobookshelf collection instead, so a sync only sends the books in that collection; books already on the reader stay there. This code is under the MIT licence like the rest of kobobridge, so you are free to read it, change it or remove the key check. The key is how you pay for this feature if you want it to work as shipped; it is not a permission you need. Sales are not open yet, and in version 0.2.0 no key unlocks it. To hear when sales open, subscribe to this issue, where the opening will be announced:",
+      "title": "Demo",
+      "body": "The replay at the top of this page is a terminal session of version 0.2.0, about 80 seconds long, and it loops. Every line after a command is printed by kobobridge itself. What is not real is said on screen: the Audiobookshelf server is a stand-in holding six made-up entries with public domain titles, the eReader is a test client making the main requests a reader makes when it syncs, and the key is a test key checked by a stand-in key server. The same replay as a file, and the script that records it:",
+      "link": {
+        "label": "demo replay and recording script",
+        "url": "https://github.com/Rezarys/kobobridge/releases/tag/demo-0.2.0"
+      }
+    },
+    {
+      "title": "What is free, and what the key is for",
+      "body": "Free, under the MIT licence: the whole tool, syncing your whole library, and every bug fix, for everyone. The key, 15 euros paid once, lets the bridge sync a single Audiobookshelf collection instead of the whole library, so a sync only sends the books in that collection; books already on the reader stay there. That code is under the MIT licence like the rest of kobobridge, so you are free to read it, change it or remove the key check. The key is how you pay for this feature if you want it to work as shipped; it is not a permission you need. No subscription, no account with me, and the key does not expire. It is checked online once per installation, then the bridge makes no further call to the key server. Sales are not open yet, and in version 0.2.0 no key unlocks the feature. To hear when sales open, subscribe to this issue, where the opening will be announced:",
       "link": {
         "label": "tell me when sales open",
         "url": "https://github.com/Rezarys/kobobridge/issues/7"
@@ -41,6 +51,11 @@
       "body": "Version 0.2.0. The sync protocol has been exercised over HTTP against a real Audiobookshelf library of 1,374 books, by a reader of this repository rather than by me: initialization, auth, paged sync to completion, downloads and covers. It has also been run against a physical device, and not by me, since I own none: one reader ran a complete sync of a three book library on a Libra Colour, firmware 4.46.23836, against version 0.1.4 and posted the trace in issue 6, fifty five requests with no failure and three files delivered at their advertised sizes. Another reader reports the opposite in issue 3: the books appear on the shelf and the files never arrive. That reader has a Clara B&W on the same firmware, 4.46.23836, so the firmware alone does not explain the difference; which version of kobobridge they ran was never stated. If you try it, an issue saying what happened is the most useful thing you can send, working or not."
     }
   ],
+  "price": {
+    "amount": "15 EUR",
+    "period": "paid once, no subscription",
+    "note": "One key, for syncing a single collection. Syncing the whole library stays free. Sales are not open yet: there is no buy button, and no payment is taken here. When they open, payment, tax and refunds are handled by Lemon Squeezy, the merchant of record, under its terms; VAT or sales tax, where it applies, is calculated at checkout."
+  },
   "contact": {
     "label": "open an issue",
     "url": "https://github.com/Rezarys/kobobridge/issues"

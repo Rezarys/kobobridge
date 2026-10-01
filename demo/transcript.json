@@ -1,0 +1,386 @@
+[
+ [
+  "note",
+  "# kobobridge 0.2.0: made-up library, stand-in servers, test key."
+ ],
+ [
+  "note",
+  "# Free part: the whole Audiobookshelf library goes to the eReader."
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_ABS_URL=http://192.168.1.10:13378"
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_ABS_TOKEN=demo-abs-token"
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_PUBLIC_URL=http://192.168.1.10:8484"
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_DEVICE_TOKEN=demo-device"
+ ],
+ [
+  "cmd",
+  "kobobridge check"
+ ],
+ [
+  "out",
+  "Audiobookshelf answered: 1 library."
+ ],
+ [
+  "out",
+  "Ebooks the eReader can read: 6."
+ ],
+ [
+  "out",
+  "  Pride and Prejudice (Jane Austen) [epub]"
+ ],
+ [
+  "out",
+  "  Moby-Dick (Herman Melville) [epub]"
+ ],
+ [
+  "out",
+  "  Frankenstein (Mary Shelley) [kepub]"
+ ],
+ [
+  "out",
+  "  Dracula (Bram Stoker) [epub]"
+ ],
+ [
+  "out",
+  "  The Time Machine (H. G. Wells) [epub]"
+ ],
+ [
+  "out",
+  "  Middlemarch (George Eliot) [epub]"
+ ],
+ [
+  "clear",
+  ""
+ ],
+ [
+  "note",
+  "# Run the bridge. Below, a test client makes the main requests an eReader makes on sync."
+ ],
+ [
+  "cmd",
+  "kobobridge run"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "Point the eReader at this bridge:"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "  1. Plug the eReader into a computer over USB."
+ ],
+ [
+  "out",
+  "  2. Open the hidden folder .kobo/Kobo/ and edit 'Kobo eReader.conf'."
+ ],
+ [
+  "out",
+  "  3. Under [OneStoreServices], set:"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "       api_endpoint=http://192.168.1.10:8484/kobo/demo-device"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "  4. Eject, then sync from the eReader."
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    listening on 0.0.0.0:8484, logging at info level"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/v1/initialization -> 200 5244 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    library listed: 6 ebooks in 0.0 s"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    sync: 6 of 6 books sent, device is up to date"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/v1/library/sync -> 200 11538 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_01: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_01 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_02: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_02 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_03: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_03 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_04: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_04 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_05: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_05 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_06: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_06 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "note",
+  "# On the eReader: 6 books, the whole library."
+ ],
+ [
+  "clear",
+  ""
+ ],
+ [
+  "note",
+  "# Paid part: sync one Audiobookshelf collection instead of the whole library."
+ ],
+ [
+  "note",
+  "# Without a key, the bridge says why and keeps syncing everything."
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_COLLECTION_ID=col_summer"
+ ],
+ [
+  "cmd",
+  "kobobridge check --limit 3"
+ ],
+ [
+  "out",
+  "syncing the whole library, collection not applied: set KOBOBRIDGE_LICENSE_KEY to the key you received after purchase"
+ ],
+ [
+  "out",
+  "Collection: syncing the whole library, collection not applied: set KOBOBRIDGE_LICENSE_KEY to the key you received after purchase."
+ ],
+ [
+  "out",
+  "Audiobookshelf answered: 1 library."
+ ],
+ [
+  "out",
+  "Ebooks the eReader can read: 6."
+ ],
+ [
+  "out",
+  "  Pride and Prejudice (Jane Austen) [epub]"
+ ],
+ [
+  "out",
+  "  Moby-Dick (Herman Melville) [epub]"
+ ],
+ [
+  "out",
+  "  Frankenstein (Mary Shelley) [kepub]"
+ ],
+ [
+  "out",
+  "  and 3 more."
+ ],
+ [
+  "clear",
+  ""
+ ],
+ [
+  "note",
+  "# With a key. Here a test key and a stand-in key server: the released 0.2.0 accepts no key until sales open."
+ ],
+ [
+  "cmd",
+  "export KOBOBRIDGE_LICENSE_KEY=TEST-0000-DEMO-KEY"
+ ],
+ [
+  "cmd",
+  "kobobridge check"
+ ],
+ [
+  "out",
+  "Collection: syncing collection col_summer, key bought by Demo Buyer."
+ ],
+ [
+  "out",
+  "Audiobookshelf answered: 1 library."
+ ],
+ [
+  "out",
+  "Ebooks the eReader can read: 2."
+ ],
+ [
+  "out",
+  "  Frankenstein (Mary Shelley) [kepub]"
+ ],
+ [
+  "out",
+  "  The Time Machine (H. G. Wells) [epub]"
+ ],
+ [
+  "note",
+  "# The key was checked online once (2 requests). Later starts read a local file."
+ ],
+ [
+  "clear",
+  ""
+ ],
+ [
+  "note",
+  "# Run the bridge again; the eReader syncs."
+ ],
+ [
+  "cmd",
+  "kobobridge run"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    syncing collection col_summer, key bought by Demo Buyer"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "Point the eReader at this bridge:"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "  1. Plug the eReader into a computer over USB."
+ ],
+ [
+  "out",
+  "  2. Open the hidden folder .kobo/Kobo/ and edit 'Kobo eReader.conf'."
+ ],
+ [
+  "out",
+  "  3. Under [OneStoreServices], set:"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "       api_endpoint=http://192.168.1.10:8484/kobo/demo-device"
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "  4. Eject, then sync from the eReader."
+ ],
+ [
+  "out",
+  ""
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    listening on 0.0.0.0:8484, logging at info level"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/v1/initialization -> 200 5244 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    library listed: 2 ebooks in 0.0 s"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    sync: 2 of 2 books sent, device is up to date"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/v1/library/sync -> 200 3770 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_03: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_03 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    download of li_05: upstream says 2048 bytes, type application/epub+zip"
+ ],
+ [
+  "out",
+  "2026-10-02T00:28:45 INFO    GET /kobo/<token>/download/li_05 -> 200 2048 bytes in 0 ms"
+ ],
+ [
+  "note",
+  "# This sync sends only the 2 books of the collection. No new key check."
+ ],
+ [
+  "note",
+  "# Whole library sync stays free, MIT. The key is 15 EUR, paid once, no subscription."
+ ]
+]
