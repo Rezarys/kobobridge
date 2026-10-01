@@ -1,7 +1,7 @@
 """A read only client for the Audiobookshelf API.
 
 Every call in this module is a GET. The bridge never writes to your library: no metadata
-update, no progress push, no deletion. :meth:`Audiobookshelf._get` is the single door out, and
+update, no progress push, no deletion. :meth:`Audiobookshelf._get` is the single door to Audiobookshelf, and
 a test asserts that no other HTTP verb appears in this file.
 """
 
@@ -152,7 +152,7 @@ class Audiobookshelf:
         self.session.headers.update({"Authorization": "Bearer {0}".format(token)})
 
     def _get(self, path, **kwargs):
-        """The only outbound call in the project. Read only by construction."""
+        """The only call to Audiobookshelf. Read only by construction."""
         url = "{0}{1}".format(self.base_url, path)
         logger = get_logger()
         started = time.monotonic()
@@ -269,6 +269,16 @@ class Audiobookshelf:
         found.sort(key=lambda book: (book.modified, book.item_id))
         return found
 
+    def collection_item_ids(self, collection_id):
+        """The library item ids in one collection, read from ``/api/collections/{id}``.
+
+        Audiobookshelf answers with the collection and its ``books``, each one an expanded
+        library item carrying its ``id``. Only the ids are kept: the books themselves come from
+        the library listing, so a collection changes which books are sent and nothing else.
+        """
+        payload = self._get("/api/collections/{0}".format(collection_id)).json() or {}
+        return {str(entry.get("id")) for entry in payload.get("books") or [] if entry.get("id")}
+
     def ebook_size(self, item_id):
         """The true EPUB length, via a one byte ranged read.
 
@@ -276,7 +286,7 @@ class Audiobookshelf:
         ``/api/libraries/{id}/items`` whether or not ``minified`` or ``expanded`` is set, so
         ``media.size`` -- the whole item, audio included -- is all it offers. Asking for the
         first byte returns ``Content-Range: bytes 0-0/<total>`` and transfers one byte.
-        Still a GET, so the single outbound door holds.
+        Still a GET, so the single door to Audiobookshelf holds.
         """
         response = self._get(
             "/api/items/{0}/ebook".format(item_id), headers={"Range": "bytes=0-0"}

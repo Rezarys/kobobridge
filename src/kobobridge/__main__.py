@@ -49,6 +49,8 @@ def cmd_check(args):
     from .app import Bridge
 
     bridge = Bridge(config)
+    if bridge.license_note:
+        print("Collection: {0}.".format(bridge.license_note))
     try:
         count = bridge.client.ping()
     except AudiobookshelfError as error:

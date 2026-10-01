@@ -80,6 +80,71 @@ class ReadingStateStore:
         return len(self._entries)
 
 
+def collection_seen_path():
+    """Beside the reading state, so one volume holds everything the bridge owns."""
+    return os.path.join(os.path.dirname(default_path()), "collection-seen.json")
+
+
+class CollectionSeenStore:
+    """When the bridge first saw each book in a collection.
+
+    The reader's cursor moves on modified stamps, and putting an old book into a collection
+    does not have to change that book's stamp. Without this record such a book would sit
+    behind the cursor and never be sent. The first time the bridge sees a book in the
+    collection is used instead, as if the book had been added to the library at that moment.
+    """
+
+    def __init__(self, path=None):
+        self.path = path
+        self._lock = threading.Lock()
+        self._entries = {}
+        if path and os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as handle:
+                    loaded = json.load(handle)
+            except (OSError, ValueError):
+                loaded = None
+            if isinstance(loaded, dict):
+                self._entries = {
+                    key: value for key, value in loaded.items() if isinstance(value, dict)
+                }
+
+    def first_seen(self, collection_id, item_ids, now=None):
+        """Record any id not seen before in this collection; return every id's first sighting."""
+        now = now or utcnow()
+        with self._lock:
+            seen = self._entries.setdefault(collection_id, {})
+            fresh = [item_id for item_id in item_ids if item_id not in seen]
+            for item_id in fresh:
+                seen[item_id] = now.timestamp()
+            found = {
+                item_id: datetime.fromtimestamp(seen[item_id], tz=timezone.utc)
+                for item_id in item_ids
+            }
+            if fresh:
+                self._flush()
+        return found
+
+    def _flush(self):
+        if not self.path:
+            return
+        folder = os.path.dirname(self.path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        handle = tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=folder or ".", delete=False, suffix=".tmp"
+        )
+        try:
+            with handle:
+                json.dump(self._entries, handle)
+            os.replace(handle.name, self.path)
+        except OSError:
+            try:
+                os.unlink(handle.name)
+            except OSError:
+                pass
+
+
 def size_cache_path():
     """Beside the reading state, so one volume holds everything the bridge owns."""
     return os.path.join(os.path.dirname(default_path()), "ebook-sizes.json")

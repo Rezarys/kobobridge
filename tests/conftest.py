@@ -59,6 +59,7 @@ class FakeAudiobookshelf:
         self.items = list(items or [])
         self.libraries_payload = libraries or [{"id": "lib-1", "mediaType": "book"}]
         self.calls = []
+        self.collections = {}
         self.fail_with = None
         # Set on its own to make the cover call fail while the listing keeps working.
         self.cover_fails_with = None
@@ -88,6 +89,10 @@ class FakeAudiobookshelf:
         ]
         books.sort(key=lambda book: (book.modified, book.item_id))
         return books
+
+    def collection_item_ids(self, collection_id):
+        self.calls.append(("collection_item_ids", collection_id))
+        return set(self.collections.get(collection_id, ()))
 
     def ebook_stream(self, item_id):
         self.calls.append(("ebook_stream", item_id))

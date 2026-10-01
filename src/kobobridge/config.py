@@ -25,6 +25,8 @@ class Config:
     public_url: Optional[str] = None
     library_id: Optional[str] = None
     timeout: float = 30.0
+    collection_id: Optional[str] = None
+    license_key: Optional[str] = None
 
     def __post_init__(self):
         self.abs_url = self.abs_url.rstrip("/")
@@ -60,4 +62,6 @@ class Config:
             public_url=(env.get("KOBOBRIDGE_PUBLIC_URL", "").strip() or None),
             library_id=(env.get("KOBOBRIDGE_LIBRARY_ID", "").strip() or None),
             timeout=float(env.get("KOBOBRIDGE_TIMEOUT", "30")),
+            collection_id=(env.get("KOBOBRIDGE_COLLECTION_ID", "").strip() or None),
+            license_key=(env.get("KOBOBRIDGE_LICENSE_KEY", "").strip() or None),
         )

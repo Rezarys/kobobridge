@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- `KOBOBRIDGE_COLLECTION_ID` syncs one Audiobookshelf collection instead of the whole library. It needs a paid key in `KOBOBRIDGE_LICENSE_KEY`; sales are not open yet, so in this version no key unlocks it. Without a valid key the bridge logs why and syncs the whole library, exactly as before. Syncing the whole library stays free, and so does every bug fix. The code is MIT like the rest; the key is how you pay for the feature, not a permission you need.
+- A book put in the collection after the reader's last sync is still sent: the bridge notes when it first saw each book in the collection, in `collection-seen.json`, and treats the book as added at that moment.
+- In this version every key is refused locally and nothing is sent to the license server. Once sales are open, a start that has both settings checks the key with the Lemon Squeezy license server, one request to check it and one to activate it, and keeps the result in `license.json` beside the reading state; later starts read that file and make no network call. The key itself is not written to disk, only a hash of it. These requests are the only ones the bridge makes to anything other than your Audiobookshelf, and they are only made when both settings are present.
+
 ## 0.1.5
 
 - `/v1/categories/<id>` answers rather than 404s. 0.1.3 added `/v1/categories`, but a reader asks for a child of it: a Libra Colour on 4.46 asks nine times while it draws its home screen, and every one of those was a 404.

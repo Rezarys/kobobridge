@@ -33,9 +33,9 @@ Worth reading before you install.
 - **It does not convert anything.** Only epub and kepub files are offered. Pdf, mobi and azw3 in your library are skipped rather than converted.
 - **Audiobooks and podcasts are skipped.** The reader cannot play them.
 - **Highlights and annotations are not carried.** The bridge serves no annotation address and never tells the reader about one, so nothing you highlight reaches it. The only things it keeps from what the reader pushes are the reading position, the read status and the reading statistics; anything else the reader sends with them is dropped, and a test asserts that.
-- **Shelves and collections are not mirrored yet.**
+- **Shelves are not mirrored.** One Audiobookshelf collection can be synced instead of the whole library with a paid key, see "Syncing one collection" below.
 - **The author owns no reader, so nothing here was tested by the author against a device.** One reader of this repository has since run a complete sync on one model and one firmware version, and another reports it failing on theirs. See Status below for exactly what was exercised, by whom, and what is still open.
-- **No telemetry, no phoning home, no analytics.** Nothing about your library leaves your machine.
+- **No telemetry, no analytics.** Nothing about your library leaves your machine. The only requests made to anything other than your Audiobookshelf are the key check described in "Syncing one collection", made only if you set a collection and a key, and not repeated once a key is activated.
 
 ## Setup
 
@@ -78,6 +78,28 @@ Keep a copy of the original `api_endpoint` value. Putting it back returns the re
 
 To keep the same token across restarts, set `KOBOBRIDGE_DEVICE_TOKEN` to the value the bridge printed. Otherwise a new one is generated each run and the reader has to be pointed again.
 
+## Syncing one collection
+
+By default kobobridge syncs every ebook in your Audiobookshelf book libraries, and that stays free, along with every bug fix. A key, 15 euros once with no subscription, lets it sync a single Audiobookshelf collection instead, so a sync only sends the books in that collection. Books already on the reader stay there: the bridge never removes a book from the reader. A book you put in the collection later is sent on the next sync, even if it is older than the reader's last sync; the bridge notes when it first saw each book in the collection, in `collection-seen.json` beside the reading state.
+
+This code is under the MIT licence like the rest of kobobridge, so you are free to read it, change it or remove the key check. The key is how you pay for this feature if you want it to work as shipped; it is not a permission you need.
+
+Sales are not open yet. To hear when they are, subscribe to [issue 7](https://github.com/Rezarys/kobobridge/issues/7); the opening will be announced there.
+
+Once you have a key:
+
+```
+export KOBOBRIDGE_COLLECTION_ID=the-collection-id
+export KOBOBRIDGE_LICENSE_KEY=the-key-from-your-receipt
+kobobridge check
+```
+
+The collection id is the last part of the address when the collection is open in the Audiobookshelf web page, after `/collection/`.
+
+Once sales are open, a start that has both settings asks the Lemon Squeezy license server (`api.lemonsqueezy.com`) twice: one request to check the key and one to activate it. Those requests carry the key and the name `kobobridge`, and nothing about your library. When that succeeds, the result is kept in `license.json` beside the reading state, and later starts read that file without any network call; until it succeeds, each start asks again. The key itself is not stored, only a hash of it. `kobobridge check` and `kobobridge run` both make this check, so running one on your machine and the other in a container uses two activations. If the key is missing, refused or the license server cannot be reached, the bridge says why in its log and syncs the whole library as before. If the collection id is wrong, Audiobookshelf answers with an error and the sync fails with that error; there is no fallback to the whole library in that case.
+
+In this version no key unlocks the collection yet, because the product is not on sale, and no request is sent to the license server: every key is refused before anything is contacted. The code that reads the collection and checks the key is covered by tests, with a stand in for the license server; it has not been run against the real one.
+
 ## Docker
 
 There is no published image yet. The `Dockerfile` in this repository builds one:
@@ -104,6 +126,7 @@ Optional:
 - `KOBOBRIDGE_DEVICE_TOKEN`: pin the reader token instead of generating one per run.
 - `KOBOBRIDGE_PUBLIC_URL`: the address the reader sees, when behind a reverse proxy.
 - `KOBOBRIDGE_LIBRARY_ID`: sync one library instead of every book library.
+- `KOBOBRIDGE_COLLECTION_ID` and `KOBOBRIDGE_LICENSE_KEY`: sync one collection, with a paid key. See "Syncing one collection".
 - `KOBOBRIDGE_PORT`: port to bind, default 8484.
 - `KOBOBRIDGE_TIMEOUT`: seconds to wait on Audiobookshelf, default 30.
 - `KOBOBRIDGE_LOG_LEVEL`: `debug`, `info`, `warning` or `error`, default `info`.
@@ -141,11 +164,11 @@ The reader token is the only thing standing between the internet and your librar
 
 ## Status
 
-Version 0.1.5. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
+Version 0.2.0. The shapes of the sync protocol were learned by reading the long standing [Calibre-Web](https://github.com/janeczku/calibre-web) implementation, which has served this protocol since 2019. Reading only: Calibre-Web is under the GPL, this project is under the MIT licence, and no code was copied from it. The Audiobookshelf side and the batching logic are covered by tests.
 
 The sync protocol has been exercised over HTTP against a real Audiobookshelf holding 1,374 books, by a reader of this repository rather than by the author: initialization, auth, paged sync to completion, downloads and covers.
 
-It has also been run against a physical device, and not by the author, who owns none. One reader ran a complete sync of a three book library on a Libra Colour on firmware 4.46.23836 against version 0.1.4 and posted the trace in issue 6: fifty five requests, none of them a failure, and three files delivered matching their advertised sizes. Another reader reports the opposite on their own device against the same version, in issue 3: the books appear on the shelf and the files never arrive, and which device that is has not been established. So one model and one firmware version are known to work for a small library, nothing more than that is, and a report of either kind is the single most useful thing you can send.
+It has also been run against a physical device, and not by the author, who owns none. One reader ran a complete sync of a three book library on a Libra Colour on firmware 4.46.23836 against version 0.1.4 and posted the trace in issue 6: fifty five requests, none of them a failure, and three files delivered matching their advertised sizes. Another reader reports the opposite on their own device, in issue 3: the books appear on the shelf and the files never arrive. That reader has a Clara B&W on the same firmware, 4.46.23836, so the firmware alone does not explain the difference; which version of kobobridge they ran was never stated. So one model and one firmware version are known to work for a small library, nothing more than that is, and a report of either kind is the single most useful thing you can send.
 
 ## Development
 
